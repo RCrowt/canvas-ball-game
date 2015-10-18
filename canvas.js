@@ -2,8 +2,8 @@ $(document).ready(function () {
 
     var gravity_x = 0;
     var gravity_y = 0;
-    var canvas = jQuery('CANVAS')[0];
-    var context = canvas.getContext('2d');
+    var canvas = null;
+    var context = null;
     var sprites = [];
 
     var score = 0;
@@ -11,15 +11,16 @@ $(document).ready(function () {
     var score_penalties = false;
     var score_levelup = 10;
 
+    var imgs_urls = ['img/1.png', 'img/2.png', 'img/3.png', 'img/4.png', 'img/5.png', 'img/6.png', 'img/7.png'];
+    var imgs = [];
+
     /**
      * Constructor to create a new Ball for the screen.
      */
     var ball = function () {
 
         /* Set the colour (but not white) */
-        var r = Math.round(Math.random() * 255);
-        var g = Math.round(Math.random() * 255);
-        this.colour = 'rgba(' + r + ',' + g + ',' + Math.max(0, 255 - r - g) + ',0.75)';
+        this.image = imgs[Math.floor(Math.random() * imgs.length)];
 
         /* Set radius/size */
         this.radius = (Math.random() * (Math.min(canvas.height, canvas.width) / 10)) + 10;
@@ -30,6 +31,7 @@ $(document).ready(function () {
 
         /* Set speed */
         this.speed = (Math.random() * (canvas.height / 10)) + 10;
+        this.speed = Math.min(canvas.height, canvas.width) / this.radius;
         this.speedX = 0;
         this.speedY = 0;
 
@@ -39,8 +41,8 @@ $(document).ready(function () {
         this.render = function () {
 
             /* Calculate new speed */
-            this.speedX = gravity_x * this.speed;
-            this.speedY = gravity_y * this.speed;
+            this.speedX = gravity_x * (this.speed + sprites.length);
+            this.speedY = gravity_y * (this.speed + sprites.length);
 
             /* Calculate new Position */
             this.posX = this.posX + this.speedX;
@@ -50,33 +52,34 @@ $(document).ready(function () {
             if (this.posX < 0 + this.radius) {
                 this.posX = 0 + this.radius;
                 score_penalties = true;
+                this.image = imgs[Math.floor(Math.random() * imgs.length)];
 
             } else if (this.posX > canvas.width - this.radius) {
                 this.posX = canvas.width - this.radius;
                 score_penalties = true;
-
+                this.image = imgs[Math.floor(Math.random() * imgs.length)];
             }
 
             if (this.posY < 0 + this.radius) {
                 this.posY = 0 + this.radius;
                 score_penalties = true;
+                this.image = imgs[Math.floor(Math.random() * imgs.length)];
 
             } else if (this.posY > canvas.height - this.radius) {
                 this.posY = canvas.height - this.radius;
                 score_penalties = true;
+                this.image = imgs[Math.floor(Math.random() * imgs.length)];
 
             }
 
-            /* Draw the Ball and it's shaddow */
+            /* Draw the shadow */
             context.beginPath();
             context.fillStyle = 'rgba(0,0,0,0.5)';
-            context.arc(this.posX + (gravity_x * 20), this.posY + (gravity_y * 20), this.radius, 0, 2 * Math.PI, false);
+            context.arc(this.posX + (gravity_x * -20), this.posY + (gravity_y * -20), this.radius, 0, 2 * Math.PI, false);
             context.fill();
 
-            context.beginPath();
-            context.fillStyle = this.colour;
-            context.arc(this.posX, this.posY, this.radius, 0, 2 * Math.PI, false);
-            context.fill();
+            /* Draw the ball image. */
+            context.drawImage(this.image, 0, 0, this.image.width, this.image.height, this.posX - this.radius, this.posY - this.radius, this.radius * 2, this.radius * 2);
         }
     };
 
@@ -131,7 +134,7 @@ $(document).ready(function () {
         if (score_penalties) {
 
             /* Subtract points from the score multiplied by number of balls */
-            score = score - (sprites.length * (Math.abs(gravity_x) + Math.abs(gravity_y)));
+            score = score - (sprites.length * sprites.length * (Math.abs(gravity_x) + Math.abs(gravity_y)));
 
             /* Vibrate the device (if supported) */
             if (navigator.vibrate) {
@@ -147,8 +150,10 @@ $(document).ready(function () {
         } else if (sprites.length > 0) {
 
             /* Add points to the score and update the max score. */
-            score = score + ( (Math.abs(gravity_x) + Math.abs(gravity_y)));
-            score_max = Math.max(score, score_max);
+            if ((Math.abs(gravity_x) + Math.abs(gravity_y)) > 0.25) {
+                score = score + ( (Math.abs(gravity_x) + Math.abs(gravity_y)));
+                score_max = Math.max(score, score_max);
+            }
 
             /* Check the timer/counter for the next level uo and add balls */
             score_levelup++;
@@ -175,24 +180,10 @@ $(document).ready(function () {
         sprites = [];
     };
 
-    /* Resize the canvas to fit the window. */
-    jQuery(window).on('resize', function () {
-        canvas.width = jQuery(window).innerWidth();
-        canvas.height = jQuery(window).innerHeight();
-
-    });
-
-    /* Restart the game when the canvas is clicked. */
-    jQuery('CANVAS').on('click', function (event) {
-        doReset();
-        sprites.push(new ball());
-
-    }).resize();
-
     /* Enable vibration support (if available) */
     navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
 
-    /* Add listner for device orientation (if supported) */
+    /* Add listener for device orientation (if supported) */
     if (window.DeviceOrientationEvent) {
         window.addEventListener('deviceorientation', function (event) {
 
@@ -213,8 +204,48 @@ $(document).ready(function () {
         alert('Your browser dosn\'t support device orientation');
     }
 
-    /* Start the animation and score-keeper */
-    doAnimate();
-    doScoreCount();
+    /* Load Images then launch the game */
+    for (i = 0; i < imgs_urls.length; i++) {
+
+        var tmp = new Image();
+        tmp.src = imgs_urls[i];
+        tmp.onload = function (a, b, c) {
+
+            /* Add to Images */
+            imgs.push(this);
+
+            /* Continue */
+            if (imgs.length == imgs_urls.length) {
+
+                /* All images loaded, create the canvas */
+                jQuery('BODY').html('<canvas></canvas>');
+                canvas = jQuery('CANVAS')[0];
+                context = canvas.getContext('2d');
+
+                /* Resize the canvas to fit the window. */
+                jQuery(window).on('resize', function () {
+                    canvas.width = jQuery(window).innerWidth();
+                    canvas.height = jQuery(window).innerHeight();
+                });
+
+                /* Restart the game when the canvas is clicked. */
+                jQuery('CANVAS').on('click', function (event) {
+                    doReset();
+                    sprites.push(new ball());
+                }).resize();
+
+                /* Start the animation and score-keeper */
+                doAnimate();
+                doScoreCount();
+
+            } else {
+
+                /* Show loading progress */
+                jQuery('BODY').html('Loading: ' + ((imgs.length / imgs_urls.length) * 100).toFixed(0) + '%');
+
+            }
+
+        };
+    }
 
 })
