@@ -75,7 +75,7 @@ $(document).ready(function () {
             /* Draw the shadow */
             context.beginPath();
             context.fillStyle = 'rgba(0,0,0,0.5)';
-            context.arc(this.posX + (gravity_x * -20), this.posY + (gravity_y * -20), this.radius, 0, 2 * Math.PI, false);
+            context.arc(this.posX + (gravity_x * 20), this.posY + (gravity_y * 20), this.radius, 0, 2 * Math.PI, false);
             context.fill();
 
             /* Draw the ball image. */
