@@ -13,6 +13,8 @@ $(document).ready(function () {
 
     var imgs_urls = ['img/1.png', 'img/2.png', 'img/3.png', 'img/4.png', 'img/5.png', 'img/6.png', 'img/7.png'];
     var imgs = [];
+    
+    var imgs_urls = ['img/1.png'];
 
     /**
      * Constructor to create a new Ball for the screen.
